@@ -36,8 +36,11 @@
 
 #ifdef QCOM_BSP
 #include <gralloc_priv.h>
+#include <qdMetaData.h>
+#ifdef VFM_AVAILABLE
+#include "vfm_metadata.h"
+#endif //VFM_AVAILABLE
 #endif
-
 namespace android {
 
 Surface::Surface(
@@ -82,6 +85,7 @@ Surface::Surface(
 #ifdef SURFACE_SKIP_FIRST_DEQUEUE
     mDequeuedOnce = false;
 #endif
+    mDequeueIdx = 0;
 }
 
 Surface::~Surface() {
@@ -169,6 +173,18 @@ int Surface::hook_perform(ANativeWindow* window, int operation, ...) {
     return c->perform(operation, args);
 }
 
+int Surface::setDirtyRegion(Region* inOutDirtyRegion) {
+    Rect dirty;
+    if(inOutDirtyRegion)
+         dirty = inOutDirtyRegion->getBounds();
+    Mutex::Autolock lock(mMutex);
+    status_t res = mGraphicBufferProducer->updateDirtyRegion(mDequeueIdx,
+                                      dirty.left, dirty.top, dirty.right,
+                                      dirty.bottom);
+    return res;
+}
+
+
 int Surface::setSwapInterval(int interval) {
     ATRACE_CALL();
     // EGL specification states:
@@ -202,6 +218,9 @@ int Surface::dequeueBuffer(android_native_buffer_t** buffer, int* fenceFd) {
              result);
         return result;
     }
+
+    mDequeueIdx = buf;
+
     sp<GraphicBuffer>& gbuf(mSlots[buf].buffer);
 
     // this should never happen
@@ -288,6 +307,27 @@ int Surface::queueBuffer(android_native_buffer_t* buffer, int fenceFd) {
     } else {
         timestamp = mTimestamp;
     }
+#ifdef QCOM_BSP
+#ifdef VFM_AVAILABLE
+    /* Add a session ID while queuing the buffers to maintain session
+       association */
+    {
+        int nErr;
+        private_handle_t* pBufPrvtHandle = (private_handle_t*)buffer->handle;
+
+        VfmMetaData_t vfmMetaData;
+        memset(&vfmMetaData, 0, sizeof(VfmMetaData_t));
+
+        vfmMetaData.type = VFM_SESSION_ID;
+        vfmMetaData.sessionId =
+            reinterpret_cast<int>(mGraphicBufferProducer.get());
+        nErr = setMetaData(pBufPrvtHandle, PP_PARAM_VFM_DATA,
+            (void*)&vfmMetaData);
+        if(0 != nErr)
+            ALOGE("Error:%d in setMetaData PP_PARAM_SESSIONID", nErr);
+   }
+#endif
+#endif
     int i = getSlotFromBufferLocked(buffer);
     if (i < 0) {
         return i;
