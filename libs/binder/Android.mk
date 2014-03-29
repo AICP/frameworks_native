@@ -60,6 +60,10 @@ endif
 LOCAL_C_INCLUDES += hardware/samsung_slsi/$(PLATFORM_DIR)/include
 endif
 
+ifeq ($(TARGET_ARCH_LOWMEM),true)
+LOCAL_CFLAGS += -DBINDER_VM_MEGABYTES=1
+endif
+
 LOCAL_LDLIBS += -lpthread
 LOCAL_MODULE := libbinder
 LOCAL_SHARED_LIBRARIES += liblog libcutils libutils
@@ -78,6 +82,10 @@ else
 PLATFORM_DIR := $(TARGET_BOARD_PLATFORM)
 endif
 LOCAL_C_INCLUDES += hardware/samsung_slsi/$(PLATFORM_DIR)/include
+endif
+
+ifeq ($(TARGET_ARCH_LOWMEM),true)
+LOCAL_CFLAGS += -DBINDER_VM_MEGABYTES=1
 endif
 
 LOCAL_LDLIBS += -lpthread

@@ -41,7 +41,11 @@
 #include <sys/mman.h>
 #include <sys/stat.h>
 
-#define BINDER_VM_SIZE ((1*1024*1024) - (4096 *2))
+#ifndef BINDER_VM_MEGABYTES
+#define BINDER_VM_MEGABYTES 2
+#endif
+
+#define BINDER_VM_SIZE ((BINDER_VM_MEGABYTES*1024*1024) - (4096 *2))
 
 
 // ---------------------------------------------------------------------------
