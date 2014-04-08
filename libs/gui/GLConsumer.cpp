@@ -532,8 +532,6 @@ status_t GLConsumer::updateAndReleaseLocked(const BufferQueue::BufferItem& item)
 
     computeCurrentTransformMatrixLocked();
 
-    mConsumer->setCurrentDirtyRegion(buf);
-
     return err;
 }
 
@@ -1138,11 +1136,6 @@ status_t GLConsumer::doGLFenceWaitLocked() const {
     }
 
     return NO_ERROR;
-}
-
-void GLConsumer::getDirtyRegion(Rect& dirtyRect) {
-     Mutex::Autolock lock(mMutex);
-     mConsumer->getCurrentDirtyRegion(dirtyRect);
 }
 
 void GLConsumer::freeBufferLocked(int slotIndex) {
