@@ -487,6 +487,10 @@ private:
     // mReleasedTexImageBuffer is a dummy buffer used when in single buffer
     // mode and releaseTexImage() has been called
     static sp<GraphicBuffer> sReleasedTexImageBuffer;
+
+    // for Miracast Sink, screen rotation flag
+    bool mSinkRotateInitialized;
+    bool mSinkRotate;
 };
 
 // ----------------------------------------------------------------------------
