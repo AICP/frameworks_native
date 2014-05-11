@@ -162,6 +162,9 @@ GLConsumer::GLConsumer(const sp<IGraphicBufferConsumer>& bq, uint32_t tex,
 #ifdef QCOM_BSP
     mCurrentDirtyRect.clear();
 #endif
+
+    mSinkRotateInitialized = false;
+    mSinkRotate = true;
 }
 
 status_t GLConsumer::setDefaultMaxBufferCount(int bufferCount) {
@@ -521,6 +524,40 @@ status_t GLConsumer::updateAndReleaseLocked(const BufferQueue::BufferItem& item)
         }
     }
 
+    // for Miracast Sink, screen rotation
+    BufferQueue::BufferItem newrot;
+    newrot.mTransform = item.mTransform;
+    if (mName == "A Sink Surface") {
+        if(!mSinkRotateInitialized) {
+            mSinkRotateInitialized = true;
+
+            // self parse
+            FILE* fp = fopen("/data/data/com.example.mira4u/shared_prefs/prefs.xml", "r");
+            if (fp == NULL) {
+                ALOGE("updateAndReleaseLocked() fopen error[%d] mSinkRotate[%d]", errno, mSinkRotate);
+            } else {
+                char line[80];
+                while( fgets(line , sizeof(line) , fp) != NULL ) {
+                    char lin[80];
+                    memset(lin, 0, 80);
+                    ALOGD("[%s]", strncpy(lin, line, strlen(line)-1)); // delete CR
+                    int val = -1;
+                    int ret = sscanf(line, "    <string name=\"persist.sys.wfd.nosinkrotate\">%d</string>", &val);
+                    if (ret == 1 && val == 1) {
+                        mSinkRotate = false;
+                        break;
+                    }
+                }
+                fclose(fp);
+            }
+        }
+
+        if (mSinkRotate) {
+            newrot.mTransform = item.mTransform | 0x04; // /system/core/include/system/graphics.h HAL_TRANSFORM_ROT_90    = 0x04,
+            //ST_LOGW("updateAndReleaseLocked() Force Transform::ROT_90 [%d, %d]", mSlots[buf].mGraphicBuffer->getWidth(), mSlots[buf].mGraphicBuffer->getHeight());
+        }
+    }
+
     // Update the GLConsumer state.
     mCurrentTexture = buf;
 #ifdef STE_HARDWARE
@@ -529,7 +566,8 @@ status_t GLConsumer::updateAndReleaseLocked(const BufferQueue::BufferItem& item)
     mCurrentTextureBuf = mSlots[buf].mGraphicBuffer;
 #endif
     mCurrentCrop = item.mCrop;
-    mCurrentTransform = item.mTransform;
+    //mCurrentTransform = item.mTransform;
+    mCurrentTransform = newrot.mTransform;
     mCurrentScalingMode = item.mScalingMode;
     mCurrentTimestamp = item.mTimestamp;
     mCurrentFence = item.mFence;
