@@ -162,10 +162,10 @@ SurfaceFlinger::SurfaceFlinger()
         mLastTransactionTime(0),
         mBootFinished(false),
         mUseDithering(false),
-        mGpuTileRenderEnable(false),
         mPrimaryHWVsyncEnabled(false),
         mHWVsyncAvailable(false),
-        mDaltonize(false)
+        mDaltonize(false),
+        mGpuTileRenderEnable(false)
 {
     ALOGI("SurfaceFlinger is starting");
 
@@ -187,12 +187,10 @@ SurfaceFlinger::SurfaceFlinger()
         }
     }
 #ifdef QCOM_BSP
-    mCanUseGpuTileRender = false;
     property_get("debug.sf.gpu_comp_tiling", value, "0");
     mGpuTileRenderEnable = atoi(value) ? true : false;
     if(mGpuTileRenderEnable)
        ALOGV("DirtyRect optimization enabled for FULL GPU Composition");
-    mUnionDirtyRect.clear();
 #endif
 
     ALOGI_IF(mDebugRegion, "showupdates enabled");
@@ -940,24 +938,11 @@ void SurfaceFlinger::handleMessageInvalidate() {
     handlePageFlip();
 }
 
-#ifdef QCOM_BSP
-/* Compute DirtyRegion, if DR optimization for GPU comp optimization
- * is ON & and no external device is connected.*/
-void SurfaceFlinger::setUpTiledDr() {
-    if(mGpuTileRenderEnable && (mDisplays.size()==1)) {
-        const sp<DisplayDevice>& hw(mDisplays[HWC_DISPLAY_PRIMARY]);
-        mCanUseGpuTileRender = computeTiledDr(hw);
-    }
-}
-#endif
 void SurfaceFlinger::handleMessageRefresh() {
     ATRACE_CALL();
     preComposition();
     rebuildLayerStacks();
     setUpHWComposer();
-#ifdef QCOM_BSP
-    setUpTiledDr();
-#endif
     doDebugFlashRegions();
     doComposition();
     postComposition();
@@ -973,43 +958,19 @@ void SurfaceFlinger::doDebugFlashRegions()
     for (size_t dpy=0 ; dpy<mDisplays.size() ; dpy++) {
         const sp<DisplayDevice>& hw(mDisplays[dpy]);
         if (hw->canDraw()) {
-            const int32_t height = hw->getHeight();
-            RenderEngine& engine(getRenderEngine());
-#ifdef QCOM_BSP
-            // Use Union DR, if it is valid & GPU Tiled DR optimization is ON
-            if(mCanUseGpuTileRender && !mUnionDirtyRect.isEmpty()) {
+            // transform the dirty region into this screen's coordinate space
+            const Region dirtyRegion(hw->getDirtyRegion(repaintEverything));
+            if (!dirtyRegion.isEmpty()) {
                 // redraw the whole screen
                 doComposeSurfaces(hw, Region(hw->bounds()));
-                Region dirtyRegion(mUnionDirtyRect);
-                Rect dr = mUnionDirtyRect;
-                hw->eglSwapPreserved(true);
-                engine.startTileComposition(dr.left, (height-dr.bottom),
-                      (dr.right-dr.left),
-                      (dr.bottom-dr.top), 1);
+
                 // and draw the dirty region
+                const int32_t height = hw->getHeight();
+                RenderEngine& engine(getRenderEngine());
                 engine.fillRegionWithColor(dirtyRegion, height, 1, 0, 1, 1);
-                engine.endTileComposition(GL_PRESERVE);
+
                 hw->compositionComplete();
                 hw->swapBuffers(getHwComposer());
-            } else
-#endif
-            {
-                // transform the dirty region into this screen's coordinate
-                // space
-                const Region dirtyRegion(hw->getDirtyRegion(repaintEverything));
-                if (!dirtyRegion.isEmpty()) {
-                   // redraw the whole screen
-                   doComposeSurfaces(hw, Region(hw->bounds()));
-                   // and draw the dirty region
-#ifdef QCOM_BSP
-                   if(mGpuTileRenderEnable)
-                       hw->eglSwapPreserved(false);
-#endif
-
-                   engine.fillRegionWithColor(dirtyRegion, height, 1, 0, 1, 1);
-                   hw->compositionComplete();
-                   hw->swapBuffers(getHwComposer());
-               }
             }
         }
     }
@@ -1979,19 +1940,20 @@ void SurfaceFlinger::doDisplayComposition(const sp<const DisplayDevice>& hw,
 }
 
 #ifdef QCOM_BSP
-bool SurfaceFlinger::computeTiledDr(const sp<const DisplayDevice>& hw) {
+bool SurfaceFlinger::computeTiledDr(const sp<const DisplayDevice>& hw,
+                                         Rect& unionDirtyRect) {
     int fbWidth= hw->getWidth();
     int fbHeight= hw->getHeight();
     Rect fullScreenRect = Rect(0,0,fbWidth, fbHeight);
     const int32_t id = hw->getHwcDisplayId();
-    mUnionDirtyRect.clear();
+    unionDirtyRect.clear();
     HWComposer& hwc(getHwComposer());
 
     /* Compute and return the Union of Dirty Rects.
      * Return false if the unionDR is fullscreen, as there is no benefit from
      * preserving full screen.*/
-    return (hwc.canUseTiledDR(id, mUnionDirtyRect) &&
-          (mUnionDirtyRect != fullScreenRect));
+    return (hwc.canUseTiledDR(id, unionDirtyRect) &&
+          (unionDirtyRect != fullScreenRect));
 
 }
 #endif
@@ -2004,14 +1966,22 @@ void SurfaceFlinger::doComposeSurfaces(const sp<const DisplayDevice>& hw, const 
     HWComposer::LayerListIterator cur = hwc.begin(id);
     const HWComposer::LayerListIterator end = hwc.end(id);
 
+    Rect unionDirtyRect;
     Region clearRegion;
     bool hasGlesComposition = hwc.hasGlesComposition(id);
+    bool canUseGpuTileRender = false;
     if (hasGlesComposition) {
         if (!hw->makeCurrent(mEGLDisplay, mEGLContext)) {
             ALOGW("DisplayDevice::makeCurrent failed. Aborting surface composition for display %s",
                   hw->getDisplayName().string());
             return;
         }
+#ifdef QCOM_BSP
+        /* Compute DirtyRegion , if DR optimization for GPU comp optimization
+         * is ON & device is primary.*/
+        if(mGpuTileRenderEnable && (mDisplays.size()==1))
+            canUseGpuTileRender = computeTiledDr(hw, unionDirtyRect);
+#endif
 
         // Never touch the framebuffer if we don't have any framebuffer layers
         const bool hasHwcComposition = hwc.hasHwcComposition(id);
@@ -2045,11 +2015,11 @@ void SurfaceFlinger::doComposeSurfaces(const sp<const DisplayDevice>& hw, const 
                 clearRegion = region;
                 if (cur == end) {
                     drawWormhole(hw, region);
-                } else if(mCanUseGpuTileRender) {
+                } else if(canUseGpuTileRender) {
                    /* If GPUTileRect DR optimization on clear only the UnionDR
                     * (computed by computeTiledDr) which is the actual region
                     * that will be drawn on FB in this cycle.. */
-                    clearRegion = clearRegion.andSelf(Region(mUnionDirtyRect));
+                    clearRegion = clearRegion.andSelf(Region(unionDirtyRect));
                 }
             } else
 #endif
@@ -2101,9 +2071,9 @@ void SurfaceFlinger::doComposeSurfaces(const sp<const DisplayDevice>& hw, const 
          * ii) do startTile with union DirtyRect
          * else , Disable EGL_SWAP_PRESERVED */
         if(mGpuTileRenderEnable && (mDisplays.size()==1)) {
-            if(mCanUseGpuTileRender && !mUnionDirtyRect.isEmpty()) {
+            if(canUseGpuTileRender) {
                 hw->eglSwapPreserved(true);
-                Rect dr = mUnionDirtyRect;
+                Rect dr = unionDirtyRect;
                 engine.startTileComposition(dr.left, (fbHeight-dr.bottom),
                       (dr.right-dr.left),
                       (dr.bottom-dr.top), 0);
@@ -2157,7 +2127,7 @@ void SurfaceFlinger::doComposeSurfaces(const sp<const DisplayDevice>& hw, const 
 #ifdef QCOM_BSP
         // call EndTile, if starTile has been called in this cycle.
         if(mGpuTileRenderEnable && (mDisplays.size()==1)) {
-            if(mCanUseGpuTileRender && !mUnionDirtyRect.isEmpty()) {
+            if(canUseGpuTileRender) {
                 engine.endTileComposition(GL_PRESERVE);
             }
         }
