@@ -46,6 +46,11 @@ LOCAL_SHARED_LIBRARIES := \
 	libutils \
 	liblog
 
+# Executed only on QCOM BSPs
+ifeq ($(TARGET_USES_QCOM_BSP),true)
+    LOCAL_C_INCLUDES += $(call project-path-for,qcom-display)/$(TARGET_BOARD_PLATFORM)/libgralloc
+    LOCAL_CFLAGS += -DQCOM_BSP
+endif
 
 LOCAL_MODULE:= libgui
 
