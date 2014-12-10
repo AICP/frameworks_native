@@ -62,10 +62,6 @@ public:
         status_t getphys(buffer_handle_t handle, void** paddr);
     #endif
     
-#ifdef EXYNOS4_ENHANCEMENTS
-    status_t getphys(buffer_handle_t handle, void** paddr);
-#endif
-
     // dumps information about the mapping of this handle
     void dump(buffer_handle_t handle);
 
