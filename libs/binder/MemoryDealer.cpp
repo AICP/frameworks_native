@@ -169,7 +169,7 @@ Allocation::Allocation(
     : MemoryBase(heap, offset, size), mDealer(dealer)
 {
 #ifndef NDEBUG
-    void* const start_ptr = (void*)(intptr_t(heap->base()) + offset);
+    void* const start_ptr = (void*)(uintptr_t(heap->base()) + offset);
     memset(start_ptr, 0xda, size);
 #endif
 }
@@ -201,7 +201,7 @@ Allocation::~Allocation()
         end &= ~(pagesize-1);
 
         if (start < end) {
-            void* const start_ptr = (void*)(intptr_t(getHeap()->base()) + start);
+            void* const start_ptr = (void*)(uintptr_t(getHeap()->base()) + start);
             size_t size = end-start;
 
 #ifndef NDEBUG
