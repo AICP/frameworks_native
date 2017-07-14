@@ -434,6 +434,9 @@ private:
         {
             Mutex::Autolock lock(mCallbackMutex);
             callback = mCallback;
+            if (mTraceVsync) {
+                mValue = (mValue + 1) % 2;
+            }
         }
 
         if (callback != NULL) {
