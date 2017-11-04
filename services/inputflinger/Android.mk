@@ -40,6 +40,8 @@ LOCAL_SHARED_LIBRARIES := \
 
 LOCAL_CFLAGS += -Wno-unused-parameter
 
+LOCAL_CFLAGS += -O3
+
 LOCAL_EXPORT_C_INCLUDE_DIRS := $(LOCAL_PATH)
 
 LOCAL_MODULE := libinputflinger
