@@ -745,6 +745,11 @@ void InputDispatcher::releaseInboundEventLocked(EventEntry* entry) {
         mNextUnblockedEvent = nullptr;
     }
     addRecentEventLocked(entry);
+    // The analyzer sees a ref increment/decrement in addRecentEventLocked.
+    // Since there's no easy way to assert that refcount increments leave the
+    // refcount >= 2 (we'd need to refactor, ...) without runtime overhead, use
+    // a NOLINT.
+    // NOLINTNEXTLINE(clang-analyzer-cplusplus.NewDelete)
     entry->release();
 }
 
@@ -2517,6 +2522,11 @@ void InputDispatcher::synthesizeCancelationEventsForConnectionLocked(
             enqueueDispatchEntryLocked(connection, cancelationEventEntry, // increments ref
                     &target, InputTarget::FLAG_DISPATCH_AS_IS);
 
+            // The analyzer sees a ref increment/decrement in
+            // enqueueDispatchEntryLocked. Since there's no easy way to assert
+            // that refcount increments leave the refcount >= 2 (we'd need to
+            // refactor, ...) without runtime overhead, use a NOLINT.
+            // NOLINTNEXTLINE(clang-analyzer-cplusplus.NewDelete)
             cancelationEventEntry->release();
         }
 
