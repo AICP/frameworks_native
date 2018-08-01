@@ -683,6 +683,12 @@ private:
             entryCount++;
             entry->prev = tail;
             if (tail) {
+                // The analyzer sees a ref increment/decrement that leads to
+                // this in a caller of this function. Since there's no nearby
+                // assertion that `entry` must have a refcount >= 1 (and there's
+                // no trivial way to add one without runtime
+                // overhead/refactoring), we silence the analyzer locally.
+                // NOLINTNEXTLINE(clang-analyzer-cplusplus.NewDelete)
                 tail->next = entry;
             } else {
                 head = entry;
