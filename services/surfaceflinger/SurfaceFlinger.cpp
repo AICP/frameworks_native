@@ -2016,9 +2016,9 @@ void SurfaceFlinger::setUpHWComposer() {
                     }
 
                     layer->setGeometry(displayDevice, i);
-                    if (mDebugDisableHWC || mDebugRegion) {
+                    //if (mDebugDisableHWC || mDebugRegion) {
                         layer->forceClientComposition(hwcId);
-                    }
+                    //}
                 }
             }
         }
