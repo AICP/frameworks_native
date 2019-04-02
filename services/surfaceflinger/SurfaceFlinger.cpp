@@ -4869,7 +4869,8 @@ private:
     const int mApi;
 };
 
-status_t SurfaceFlinger::captureScreen(const sp<IBinder>& display, sp<GraphicBuffer>* outBuffer,
+status_t SurfaceFlinger::captureScreen(const sp<IBinder>& display,
+                                       sp<GraphicBuffer>* outBuffer, bool& outCapturedSecureLayers,
                                        Rect sourceCrop, uint32_t reqWidth, uint32_t reqHeight,
                                        int32_t minLayerZ, int32_t maxLayerZ,
                                        bool useIdentityTransform,
@@ -4901,7 +4902,8 @@ status_t SurfaceFlinger::captureScreen(const sp<IBinder>& display, sp<GraphicBuf
 
     auto traverseLayers = std::bind(std::mem_fn(&SurfaceFlinger::traverseLayersInDisplay), this,
                                     device, minLayerZ, maxLayerZ, std::placeholders::_1);
-    return captureScreenCommon(renderArea, traverseLayers, outBuffer, useIdentityTransform);
+    return captureScreenCommon(renderArea, traverseLayers, outBuffer, useIdentityTransform,
+                               outCapturedSecureLayers);
 }
 
 status_t SurfaceFlinger::captureLayers(const sp<IBinder>& layerHandleBinder,
@@ -5030,13 +5032,16 @@ status_t SurfaceFlinger::captureLayers(const sp<IBinder>& layerHandleBinder,
             visitor(layer);
         });
     };
-    return captureScreenCommon(renderArea, traverseLayers, outBuffer, false);
+    bool outCapturedSecureLayers = false;
+    return captureScreenCommon(renderArea, traverseLayers, outBuffer, false,
+                               outCapturedSecureLayers);
 }
 
 status_t SurfaceFlinger::captureScreenCommon(RenderArea& renderArea,
                                              TraverseLayersFunction traverseLayers,
                                              sp<GraphicBuffer>* outBuffer,
-                                             bool useIdentityTransform) {
+                                             bool useIdentityTransform,
+                                             bool& outCapturedSecureLayers) {
     ATRACE_CALL();
 
     const uint32_t usage = GRALLOC_USAGE_SW_READ_OFTEN | GRALLOC_USAGE_SW_WRITE_OFTEN |
@@ -5072,7 +5077,8 @@ status_t SurfaceFlinger::captureScreenCommon(RenderArea& renderArea,
             Mutex::Autolock _l(mStateLock);
             renderArea.render([&]() {
                 result = captureScreenImplLocked(renderArea, traverseLayers, (*outBuffer).get(),
-                                                 useIdentityTransform, forSystem, &fd);
+                                                 useIdentityTransform, forSystem, &fd,
+                                                 outCapturedSecureLayers);
             });
         }
 
@@ -5145,21 +5151,19 @@ void SurfaceFlinger::renderScreenImplLocked(const RenderArea& renderArea,
 status_t SurfaceFlinger::captureScreenImplLocked(const RenderArea& renderArea,
                                                  TraverseLayersFunction traverseLayers,
                                                  ANativeWindowBuffer* buffer,
-                                                 bool useIdentityTransform,
-                                                 bool forSystem,
-                                                 int* outSyncFd) {
+                                                 bool useIdentityTransform, bool forSystem,
+                                                 int* outSyncFd, bool& outCapturedSecureLayers) {
     ATRACE_CALL();
 
-    bool secureLayerIsVisible = false;
-
     traverseLayers([&](Layer* layer) {
-        secureLayerIsVisible = secureLayerIsVisible || (layer->isVisible() && layer->isSecure());
+        outCapturedSecureLayers =
+                outCapturedSecureLayers || (layer->isVisible() && layer->isSecure());
     });
 
     // We allow the system server to take screenshots of secure layers for
     // use in situations like the Screen-rotation animation and place
     // the impetus on WindowManager to not persist them.
-    if (secureLayerIsVisible && !forSystem) {
+    if (outCapturedSecureLayers && !forSystem) {
         ALOGW("FB is protected: PERMISSION_DENIED");
         return PERMISSION_DENIED;
     }
