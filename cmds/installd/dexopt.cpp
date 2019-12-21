@@ -2010,8 +2010,7 @@ int dexopt(const char* dex_path, uid_t uid, const char* pkgname, const char* ins
         const char* volume_uuid, const char* class_loader_context, const char* se_info,
         bool downgrade, int target_sdk_version, const char* profile_name,
         const char* dex_metadata_path, const char* compilation_reason, std::string* error_msg) {
-    CHECK(pkgname != nullptr);
-    CHECK(pkgname[0] != 0);
+    CHECK(pkgname != nullptr && pkgname[0] != 0);
     CHECK(error_msg != nullptr);
     CHECK_EQ(dexopt_flags & ~DEXOPT_MASK, 0)
         << "dexopt flags contains unknown fields: " << dexopt_flags;
