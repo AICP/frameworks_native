@@ -177,9 +177,13 @@ Layer::~Layer() {
 void Layer::onLayerDisplayed(const sp<Fence>& /*releaseFence*/) {}
 
 void Layer::onRemovedFromCurrentState() {
-    // the layer is removed from SF mCurrentState to mLayersPendingRemoval
+    if (!mPendingRemoval) {
+        // the layer is removed from SF mCurrentState to mLayersPendingRemoval
+        mPendingRemoval = true;
 
-    mPendingRemoval = true;
+        // remove from sf mapping
+        mFlinger->removeLayerFromMap(this);
+    }
 
     if (mCurrentState.zOrderRelativeOf != nullptr) {
         sp<Layer> strongRelative = mCurrentState.zOrderRelativeOf.promote();
@@ -220,6 +224,11 @@ bool Layer::getPremultipledAlpha() const {
 
 sp<IBinder> Layer::getHandle() {
     Mutex::Autolock _l(mLock);
+    if (mGetHandleCalled) {
+        ALOGE("Get handle called twice" );
+        return nullptr;
+    }
+    mGetHandleCalled = true;
     return new Handle(mFlinger, this);
 }
 
