@@ -152,9 +152,6 @@ struct InputReaderConfiguration {
         // The set of disabled input devices (disabledDevices) has changed.
         CHANGE_ENABLED_STATE = 1 << 9,
 
-        // Volume keys rotation option changed.
-        CHANGE_VOLUME_KEYS_ROTATION = 1 << 10,
-
         // All devices must be reopened.
         CHANGE_MUST_REOPEN = 1 << 31,
     };
@@ -255,10 +252,6 @@ struct InputReaderConfiguration {
     // The set of currently disabled input devices.
     std::set<int32_t> disabledDevices;
 
-    // Remap volume keys according to display rotation
-    // 0 - disabled, 1 - phone or hybrid rotation mode, 2 - tablet rotation mode
-    int volumeKeysRotationMode;
-
     InputReaderConfiguration() :
             virtualKeyQuietTime(0),
             pointerVelocityControlParameters(1.0f, 500.0f, 3000.0f, 3.0f),
@@ -275,8 +268,7 @@ struct InputReaderConfiguration {
             pointerGestureSwipeMaxWidthRatio(0.25f),
             pointerGestureMovementSpeedRatio(0.8f),
             pointerGestureZoomSpeedRatio(0.3f),
-            showTouches(false), pointerCapture(false),
-            volumeKeysRotationMode(0) { }
+            showTouches(false), pointerCapture(false) { }
 
     static std::string changesToString(uint32_t changes);
 
