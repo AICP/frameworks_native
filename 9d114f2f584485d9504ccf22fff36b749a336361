@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "7303c409_c5a05618",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 5
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 774
+      },
+      "writtenOn": "2020-12-21T04:21:34Z",
+      "side": 1,
+      "message": "merged on lineage https://review.lineageos.org/c/LineageOS/android_frameworks_native/+/289755",
+      "revId": "9d114f2f584485d9504ccf22fff36b749a336361",
+      "serverId": "9f904cbb-a964-4fab-a7dc-5cfc4d5c238b"
+    }
+  ]
+}
