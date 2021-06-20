@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "9d6e6a65_5a361d15",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 2
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 3
+      },
+      "writtenOn": "2021-06-20T06:51:09Z",
+      "side": 1,
+      "message": "open on LoS Gerrit: https://review.lineageos.org/c/LineageOS/android_frameworks_native/+/312770",
+      "revId": "abf193350a199b47c41fd839c7a8454becc9019a",
+      "serverId": "9f904cbb-a964-4fab-a7dc-5cfc4d5c238b"
+    }
+  ]
+}
