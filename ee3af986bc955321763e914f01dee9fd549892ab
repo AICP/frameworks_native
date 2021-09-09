@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "96f98863_b43a781c",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 3
+      },
+      "writtenOn": "2021-09-09T05:24:46Z",
+      "side": 1,
+      "message": "As a solution: revert may be avoided with tracking locally system_libhwbinder repo and picking https://android-review.googlesource.com/c/platform/system/libhwbinder/+/1367560 commit.",
+      "revId": "ee3af986bc955321763e914f01dee9fd549892ab",
+      "serverId": "9f904cbb-a964-4fab-a7dc-5cfc4d5c238b"
+    }
+  ]
+}
