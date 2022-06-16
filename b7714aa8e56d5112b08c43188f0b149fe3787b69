@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "74824f8e_4e3fc1b3",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 3
+      },
+      "writtenOn": "2022-06-16T18:40:52Z",
+      "side": 1,
+      "message": "LoS topic: https://review.lineageos.org/q/topic:nvidia-nvgpu-s",
+      "revId": "b7714aa8e56d5112b08c43188f0b149fe3787b69",
+      "serverId": "9f904cbb-a964-4fab-a7dc-5cfc4d5c238b"
+    }
+  ]
+}
