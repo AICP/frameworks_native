@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "15e2d962_422ec7a8",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1782
+      },
+      "writtenOn": "2022-12-21T16:30:14Z",
+      "side": 1,
+      "message": "I prefer to remove lines rather than comment-out.  But either works.",
+      "revId": "50f24da6fb8e4d8e50ab14cc95f2e9f80916cc82",
+      "serverId": "9f904cbb-a964-4fab-a7dc-5cfc4d5c238b"
+    }
+  ]
+}
